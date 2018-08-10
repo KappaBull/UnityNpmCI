@@ -33,7 +33,6 @@ type PackageJSON struct {
 }
 
 func main() {
-
 	filePaths, err := filepath.Glob("*.yaml")
 	if err != nil {
 		log.Fatal(err)
@@ -56,12 +55,13 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-
-		dir, _ := ioutil.TempDir("", conf.Pack.Name)
+		splits := strings.Split(strings.TrimRight(conf.Repository, ".git"), "/")
+		repoName := splits[len(splits)]
+		dir, _ := ioutil.TempDir("", repoName)
 		session.SetDir(dir)
 		//対象リポジトリをチェックアウト
 		session.Command("git", "clone", conf.Repository).Run()
-		dir = dir + "/" + conf.Pack.Name
+		dir = dir + "/" + repoName
 		session.SetDir(dir)
 		if conf.Check == "tag" {
 			out, err := session.Command("git", "tag").Output()
@@ -74,7 +74,7 @@ func main() {
 				session.SetDir(dir)
 				session.Command("git", "checkout", tag).Run()
 				session.SetDir(npmDir)
-				branchName := conf.Pack.Name + "-" + tag
+				branchName := repoName + "-" + tag
 				session.Command("git", "checkout", "-b", branchName)
 				session.Command("rm", "-rf", "*").Run()
 				FileMove(dir+conf.License, npmDir+conf.License)
