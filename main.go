@@ -1,10 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 	"unsafe"
@@ -17,26 +19,23 @@ import (
 type Config struct {
 	Repository string
 	Check      string
-	Pack       PackageJSON
+	Pack       PackageJSON `yaml:"package"`
 	License    string
 	Copy       []string
 }
 
 //PackageJSON UnityPakageJsonData
 type PackageJSON struct {
-	Name        string
-	Display     string
-	Version     string
-	Unity       string
-	Description string
-	Dependencis string
+	Name        string            `json:"name"`
+	Display     string            `json:"displayName"`
+	Version     string            `json:"version"`
+	Unity       string            `json:"unity"`
+	Description string            `json:"description"`
+	Dependencis map[string]string `json:"dependencis"`
 }
 
 func main() {
-	filePaths, err := filepath.Glob("*.yaml")
-	if err != nil {
-		log.Fatal(err)
-	}
+
 	dirName := "UnityNpm"
 	session := sh.NewSession()
 	session.ShowCMD = true
@@ -44,8 +43,17 @@ func main() {
 	session.SetDir(npmDir)
 	session.Command("git", "clone", "git@github.com:KappaBull/"+dirName+".git").Run()
 	npmDir = npmDir + "/" + dirName
-
+	session.SetDir(npmDir)
+	session.Command("git", "config", "--local", "user.name", "KappaBull").Run()
+	session.Command("git", "config", "--local", "user.email", "kappa8v11@gmail.com").Run()
+	session.Command("git", "checkout", "-f", "master").Run()
+	filePaths, err := filepath.Glob(npmDir + "/*.yaml")
+	if err != nil {
+		log.Fatal(err)
+	}
 	for _, filePath := range filePaths {
+		session.SetDir(npmDir)
+		session.Command("git", "checkout", "-f", "master").Run()
 		var conf Config
 		buf, err := ioutil.ReadFile(filePath)
 		if err != nil {
@@ -55,8 +63,8 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		splits := strings.Split(strings.TrimRight(conf.Repository, ".git"), "/")
-		repoName := splits[len(splits)]
+		splits := strings.Split(conf.Repository, "/")
+		repoName := strings.Replace(splits[len(splits)-1], ".git", "", -1)
 		dir, _ := ioutil.TempDir("", repoName)
 		session.SetDir(dir)
 		//対象リポジトリをチェックアウト
@@ -70,68 +78,106 @@ func main() {
 				log.Fatal(err)
 				continue
 			}
-			for _, tag := range strings.Fields(strings.Replace(Bstring(out), "\\n", " ", -1)) {
+
+			for _, tag := range strings.Fields(strings.Replace(bstring(out), "\\n", " ", -1)) {
 				session.SetDir(dir)
-				session.Command("git", "checkout", tag).Run()
+				session.Command("git", "checkout", "-f", tag).Run()
+
+				//CopyFileCheck
+				if exists(dir+conf.License) == false {
+					println("Not Found License File")
+					continue
+				}
+				var allTargetFound bool
+				allTargetFound = true
+				for _, copyTarget := range conf.Copy {
+					allTargetFound = exists(dir + copyTarget)
+					if allTargetFound == false {
+						println("Not Found:" + copyTarget)
+						break
+					}
+				}
+				if allTargetFound == false {
+					continue
+				}
+
 				session.SetDir(npmDir)
 				branchName := repoName + "-" + tag
-				session.Command("git", "checkout", "-b", branchName)
-				session.Command("rm", "-rf", "*").Run()
-				FileMove(dir+conf.License, npmDir+conf.License)
-				for _, copyTarget := range conf.Copy {
-					FileMove(dir+copyTarget, npmDir+copyTarget)
+				session.Command("git", "checkout", "-fb", branchName).Run()
+				session.Command("ls").Command("grep", "-v", "-E", "'.git'").Command("xargs", "rm", "-r").Run()
+
+				//package.json生成
+				assined := regexp.MustCompile("([0-9]+)")
+				group := assined.FindAllString(tag, -1)
+				var version string
+				for _, ver := range group {
+					version = version + ver + "."
 				}
-				session.Command("git", "add", "--all").Run()
+				conf.Pack.Version = strings.TrimRight(version, ".")
+				if conf.Pack.Dependencis == nil {
+					conf.Pack.Dependencis = map[string]string{}
+				}
+				if conf.Pack.Unity == "" {
+					conf.Pack.Unity = "2018.1"
+				}
+				if conf.Pack.Display == "" {
+					conf.Pack.Display = repoName
+				}
+				jsonBytes, _ := json.Marshal(conf.Pack)
+				if err := ioutil.WriteFile(npmDir+"/package.json", jsonBytes, 0644); err != nil {
+					println("File I/O Error")
+					continue
+				}
+
+				//対象ファイル追加
+				if err = os.Rename(dir+conf.License, npmDir+"/"+filepath.Base(conf.License)); err != nil {
+					continue
+				}
+				var copyFileErr error
+				for _, copyTarget := range conf.Copy {
+					if copyFileErr = os.Rename(dir+copyTarget, npmDir+"/"+filepath.Base(copyTarget)); copyFileErr != nil {
+						break
+					}
+				}
+				if copyFileErr != nil {
+					continue
+				}
+
+				err = session.Command("git", "add", "--all").Run()
+				if err != nil {
+					log.Fatal(err)
+					continue
+				}
+
 				err = session.Command("git", "commit", "-m", tag+" "+time.Now().Format("2006/01/02")).Run()
 				if err != nil {
-					log.Fatal(err)
-					continue
+					if err.Error() == "nothing to commit, working tree clean" {
+						println(branchName + " No update")
+					} else {
+						continue
+					}
 				}
-				err = session.Command("git", "push", "origin", "HEAD:"+branchName).Run()
-				if err != nil {
-					log.Fatal(err)
-					continue
-				}
+
+				//TODO: テストの為、コメントアウト
+				// err = session.Command("git", "push", "origin", "HEAD:"+branchName).Run()
+				// if err != nil {
+				// 	log.Fatal(err)
+				// 	continue
+				// }
 			}
 		}
 	}
 }
 
-func FileMove(target string, destination string) error {
-	if fileInfo, _ := os.Stat(target); fileInfo.IsDir() {
-		files, err := ioutil.ReadDir(target)
-		if err != nil {
-			return err
-		}
-
-		for _, f := range files {
-			exportPath := filepath.Join(destination, f.Name())
-			if Exists(exportPath) {
-				if err = os.Remove(exportPath); err != nil {
-					return err
-				}
-			}
-			if err := os.Rename(filepath.Join(target, f.Name()), exportPath); err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-	err := os.Rename(target, destination)
-	return err
+func exists(filename string) bool {
+	_, err := os.Stat(filename)
+	return err == nil
 }
 
-func Exists(path string) bool {
-	_, err := os.Stat(path)
-	return os.IsNotExist(err) == false
-}
-
-//bstring byteをStringへキャストする
-func Bstring(b []byte) string {
+func bstring(b []byte) string {
 	return *(*string)(unsafe.Pointer(&b))
 }
 
-//sbytes stringをbyteへキャストする
-func Sbytes(s string) []byte {
+func sbytes(s string) []byte {
 	return *(*[]byte)(unsafe.Pointer(&s))
 }
