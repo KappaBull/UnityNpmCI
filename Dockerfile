@@ -10,6 +10,7 @@ RUN dep ensure
 
 RUN go build -o uniNpmCI main.go
 
-FROM busybox
+FROM alpine
+RUN apk update && apk add --no-cache git
 COPY --from=build-env /go/src/uniNpmCI/uniNpmCI /usr/local/bin/uniNpmCI
 ENTRYPOINT ["/usr/local/bin/uniNpmCI"]
