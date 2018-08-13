@@ -11,6 +11,8 @@ RUN dep ensure
 RUN go build -o uniNpmCI main.go
 
 FROM alpine
-RUN apk update && apk add --no-cache git
+RUN apk --update add git openssh && \
+    rm -rf /var/lib/apt/lists/* && \
+    rm /var/cache/apk/*
 COPY --from=build-env /go/src/uniNpmCI/uniNpmCI /usr/local/bin/uniNpmCI
 ENTRYPOINT ["/usr/local/bin/uniNpmCI"]
