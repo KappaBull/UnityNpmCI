@@ -18,9 +18,8 @@ RUN apk --update add git openssh && \
     rm /var/cache/apk/* && \
     mkdir ~/.ssh && \
     chmod 700 ~/.ssh && \
-    echo "Host github.com¥nIdentityFile ~/.ssh/github_id_rsa" > ~/.ssh/config && \
-    chmod 600 ~/.ssh/config && \
-    ssh-keyscan github.com > ~/.ssh/known_hosts
-
+    echo "Host github.com¥nIdentityFile ~/.ssh/github_id_rsa¥nUser git" > ~/.ssh/config && \
+    chmod 600 ~/.ssh/config
+    
 COPY --from=build-env /go/src/uniNpmCI/uniNpmCI /usr/local/bin/uniNpmCI
 WORKDIR /usr/local/bin
