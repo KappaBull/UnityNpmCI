@@ -10,13 +10,13 @@ RUN dep ensure
 
 RUN go build -o uniNpmCI main.go
 
-FROM alpine
 
+FROM alpine
 #git&ssh
 RUN apk --update add git openssh && \
     rm -rf /var/lib/apt/lists/* && \
     rm /var/cache/apk/* && \
-    echo "Host github.com¥nStrictHostKeyChecking no¥nUserKnownHostsFile /dev/null¥nIdentityFile /root/.ssh/github_id_rsa" > ~/.ssh/config && \
-    chmod 600 ~/.ssh/config
+    echo "Host github.com¥nStrictHostKeyChecking no¥nUserKnownHostsFile /dev/null¥nIdentityFile /root/.ssh/github_id_rsa" > /root/.ssh/config
 
 COPY --from=build-env /go/src/uniNpmCI/uniNpmCI /usr/local/bin/uniNpmCI
+WORKDIR /usr/local/bin
