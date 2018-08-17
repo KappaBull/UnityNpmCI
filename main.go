@@ -81,6 +81,9 @@ func main() {
 	}
 	session := sh.NewSession()
 	session.ShowCMD = true
+	session.SetDir(npmDir)
+	session.Command("git", "config", "--local", "user.name", "KappaBull").Run()
+	session.Command("git", "config", "--local", "user.email", "kappa8v11@gmail.com").Run()
 	for _, filePath := range filePaths {
 		session.SetDir(npmDir)
 		err = npmRepoWork.Checkout(masterCheckOpt)
