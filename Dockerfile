@@ -23,4 +23,4 @@ RUN apk --update add git openssh && \
     ssh-keyscan github.com > ~/.ssh/known_hosts
     
 COPY --from=build-env /go/src/uniNpmCI/uniNpmCI /usr/local/bin/uniNpmCI
-ENTRYPOINT [ "/usr/local/bin/uniNpmCI" ]
+WORKDIR /usr/local/bin
