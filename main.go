@@ -41,8 +41,9 @@ func main() {
 
 	//鍵関連
 	sshKeyStr := os.Getenv("SSHKEY")
-	signer, err := ssh.ParsePrivateKey(sbytes(sshKeyStr))
+	signer, err := ssh.ParsePrivateKey([]byte(sshKeyStr))
 	if err != nil {
+		println("ImportKeyError")
 		log.Fatal(err)
 	}
 	auth := &gitssh.PublicKeys{User: "git", Signer: signer}
@@ -55,47 +56,67 @@ func main() {
 		Auth:     auth,
 	})
 	if cloneErr != nil {
+		println("CloneError")
 		log.Fatal(err)
 	}
+	// branches, _ := npmRepo.Branches()
+	// branches.ForEach(func(c *plumbing.Reference) error {
+	// 	fmt.Println(c)
+	// 	return nil
+	// })
 	npmRepoWork, _ := npmRepo.Worktree()
-
-	session := sh.NewSession()
-	session.ShowCMD = true
-	npmDir = npmDir + "/" + dirName
-	session.SetDir(npmDir)
-	session.Command("git", "config", "--local", "user.name", "KappaBull").Run()
-	session.Command("git", "config", "--local", "user.email", "kappa8v11@gmail.com").Run()
 	masterCheckOpt := &git.CheckoutOptions{
 		Branch: "master",
 		Force:  true,
+		Create: true,
 	}
 	err = npmRepoWork.Checkout(masterCheckOpt)
-	//err = session.Command("git", "checkout", "-f", "master").Run()
 	if err != nil {
+		println("CheckOutError")
 		log.Fatal(err)
 	}
 	filePaths, err := filepath.Glob(npmDir + "/*.yaml")
 	if err != nil {
 		log.Fatal(err)
 	}
+	session := sh.NewSession()
+	session.ShowCMD = true
 	for _, filePath := range filePaths {
 		session.SetDir(npmDir)
-		npmRepoWork.Checkout(masterCheckOpt)
+		err = npmRepoWork.Checkout(masterCheckOpt)
+		if err != nil && err.Error() != "a branch named \"master\" already exists" {
+			println("LoopCheckOutError")
+			log.Fatal(err)
+			break
+		}
 		//session.Command("git", "checkout", "-f", "master").Run()
 		var conf Config
 		buf, err := ioutil.ReadFile(filePath)
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
+			continue
 		}
 		err = yaml.Unmarshal(buf, &conf)
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
+			continue
 		}
 		splits := strings.Split(conf.Repository, "/")
 		repoName := strings.Replace(splits[len(splits)-1], ".git", "", -1)
 		dir, _ := ioutil.TempDir("", repoName)
 		session.SetDir(dir)
 		//対象リポジトリをチェックアウト
+		// repo, cloneErr := git.PlainClone(dir, false, &git.CloneOptions{
+		// 	URL:      conf.Repository,
+		// 	Progress: os.Stdout,
+		// 	//Auth:     auth,
+		// })
+		// repoWork, err := repo.Worktree()
+		// if err != nil {
+		// 	log.Fatal(err)
+		// 	continue
+		// }
+
 		session.Command("git", "clone", conf.Repository).Run()
 		dir = dir + "/" + repoName
 		session.SetDir(dir)
@@ -109,6 +130,9 @@ func main() {
 
 			for _, tag := range strings.Fields(strings.Replace(bstring(out), "\\n", " ", -1)) {
 				session.SetDir(dir)
+				// repoWork.Checkout(&git.CheckoutOptions{
+				// 	Hash
+				// })
 				session.Command("git", "checkout", "-f", tag).Run()
 
 				//CopyFileCheck
