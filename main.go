@@ -41,17 +41,15 @@ func main() {
 
 	//鍵関連
 	sshKeyStr := os.Getenv("SSHKEY")
-	signer, _ := ssh.ParsePrivateKey(sbytes(sshKeyStr))
+	signer, err := ssh.ParsePrivateKey(sbytes(sshKeyStr))
+	if err != nil {
+		log.Fatal(err)
+	}
 	auth := &gitssh.PublicKeys{User: "git", Signer: signer}
 
 	dirName := "UnityNpm"
-	session := sh.NewSession()
-	session.ShowCMD = true
 	npmDir, _ := ioutil.TempDir("", dirName)
-	session.SetDir(npmDir)
-
-	//session.Command("git", "clone", "git@github.com:KappaBull/"+dirName+".git").Run()
-	_, err := git.PlainClone(npmDir, false, &git.CloneOptions{
+	_, err = git.PlainClone(npmDir, false, &git.CloneOptions{
 		URL:      "git@github.com:KappaBull/UnityNpm",
 		Progress: os.Stdout,
 		Auth:     auth,
@@ -60,11 +58,16 @@ func main() {
 		log.Fatal(err)
 	}
 
+	session := sh.NewSession()
+	session.ShowCMD = true
 	npmDir = npmDir + "/" + dirName
 	session.SetDir(npmDir)
 	session.Command("git", "config", "--local", "user.name", "KappaBull").Run()
 	session.Command("git", "config", "--local", "user.email", "kappa8v11@gmail.com").Run()
-	session.Command("git", "checkout", "-f", "master").Run()
+	err = session.Command("git", "checkout", "-f", "master").Run()
+	if err != nil {
+		log.Fatal(err)
+	}
 	filePaths, err := filepath.Glob(npmDir + "/*.yaml")
 	if err != nil {
 		log.Fatal(err)
