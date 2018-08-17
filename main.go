@@ -193,9 +193,8 @@ func main() {
 				if err != nil {
 					if err.Error() == "nothing to commit, working tree clean" {
 						println(branchName + " No update")
-					} else {
-						continue
 					}
+					continue
 				}
 
 				err = npmRepo.Push(&git.PushOptions{
