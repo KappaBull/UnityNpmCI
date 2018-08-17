@@ -12,6 +12,9 @@ import (
 	"unsafe"
 
 	sh "github.com/codeskyblue/go-sh"
+	"golang.org/x/crypto/ssh"
+	git "gopkg.in/src-d/go-git.v4"
+	gitssh "gopkg.in/src-d/go-git.v4/plumbing/transport/ssh"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -36,12 +39,27 @@ type PackageJSON struct {
 
 func main() {
 
+	//鍵関連
+	sshKeyStr := os.Getenv("SSHKEY")
+	signer, _ := ssh.ParsePrivateKey(sbytes(sshKeyStr))
+	auth := &gitssh.PublicKeys{User: "git", Signer: signer}
+
 	dirName := "UnityNpm"
 	session := sh.NewSession()
 	session.ShowCMD = true
 	npmDir, _ := ioutil.TempDir("", dirName)
 	session.SetDir(npmDir)
-	session.Command("git", "clone", "git@github.com:KappaBull/"+dirName+".git").Run()
+
+	//session.Command("git", "clone", "git@github.com:KappaBull/"+dirName+".git").Run()
+	_, err := git.PlainClone(npmDir, false, &git.CloneOptions{
+		URL:      "git@github.com:KappaBull/UnityNpm",
+		Progress: os.Stdout,
+		Auth:     auth,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	npmDir = npmDir + "/" + dirName
 	session.SetDir(npmDir)
 	session.Command("git", "config", "--local", "user.name", "KappaBull").Run()
