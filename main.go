@@ -108,18 +108,6 @@ func main() {
 		repoName := strings.Replace(splits[len(splits)-1], ".git", "", -1)
 		dir, _ := ioutil.TempDir("", repoName)
 		session.SetDir(dir)
-		//対象リポジトリをチェックアウト
-		// repo, cloneErr := git.PlainClone(dir, false, &git.CloneOptions{
-		// 	URL:      conf.Repository,
-		// 	Progress: os.Stdout,
-		// 	//Auth:     auth,
-		// })
-		// repoWork, err := repo.Worktree()
-		// if err != nil {
-		// 	log.Fatal(err)
-		// 	continue
-		// }
-
 		session.Command("git", "clone", conf.Repository).Run()
 		dir = dir + "/" + repoName
 		session.SetDir(dir)
@@ -133,9 +121,6 @@ func main() {
 
 			for _, tag := range strings.Fields(strings.Replace(bstring(out), "\\n", " ", -1)) {
 				session.SetDir(dir)
-				// repoWork.Checkout(&git.CheckoutOptions{
-				// 	Hash
-				// })
 				session.Command("git", "checkout", "-f", tag).Run()
 
 				//CopyFileCheck
@@ -213,12 +198,15 @@ func main() {
 					}
 				}
 
-				//TODO: テストの為、コメントアウト
-				// err = session.Command("git", "push", "origin", "HEAD:"+branchName).Run()
-				// if err != nil {
-				// 	log.Fatal(err)
-				// 	continue
-				// }
+				err = npmRepo.Push(&git.PushOptions{
+					RemoteName: "origin",
+					Progress:   os.Stdout,
+					Auth:       auth,
+				})
+				if err != nil {
+					log.Println(err)
+					continue
+				}
 			}
 		}
 	}
