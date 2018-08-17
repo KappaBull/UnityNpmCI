@@ -49,14 +49,15 @@ func main() {
 
 	dirName := "UnityNpm"
 	npmDir, _ := ioutil.TempDir("", dirName)
-	_, err = git.PlainClone(npmDir, false, &git.CloneOptions{
+	npmRepo, cloneErr := git.PlainClone(npmDir, false, &git.CloneOptions{
 		URL:      "git@github.com:KappaBull/UnityNpm",
 		Progress: os.Stdout,
 		Auth:     auth,
 	})
-	if err != nil {
+	if cloneErr != nil {
 		log.Fatal(err)
 	}
+	npmRepoWork, _ := npmRepo.Worktree()
 
 	session := sh.NewSession()
 	session.ShowCMD = true
@@ -64,7 +65,12 @@ func main() {
 	session.SetDir(npmDir)
 	session.Command("git", "config", "--local", "user.name", "KappaBull").Run()
 	session.Command("git", "config", "--local", "user.email", "kappa8v11@gmail.com").Run()
-	err = session.Command("git", "checkout", "-f", "master").Run()
+	masterCheckOpt := &git.CheckoutOptions{
+		Branch: "master",
+		Force:  true,
+	}
+	err = npmRepoWork.Checkout(masterCheckOpt)
+	//err = session.Command("git", "checkout", "-f", "master").Run()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -74,7 +80,8 @@ func main() {
 	}
 	for _, filePath := range filePaths {
 		session.SetDir(npmDir)
-		session.Command("git", "checkout", "-f", "master").Run()
+		npmRepoWork.Checkout(masterCheckOpt)
+		//session.Command("git", "checkout", "-f", "master").Run()
 		var conf Config
 		buf, err := ioutil.ReadFile(filePath)
 		if err != nil {
