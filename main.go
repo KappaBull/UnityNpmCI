@@ -74,7 +74,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	var confs Config[len(filePaths)]
+	var confs []Config
 	for i, filePath := range filePaths {
 		buf, err := ioutil.ReadFile(filePath)
 		if err != nil {
