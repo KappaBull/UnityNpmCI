@@ -132,18 +132,16 @@ func main() {
 				}
 
 				session.SetDir(npmDir)
-				branchName := repoName + "-" + tag
-				session.Command("git", "checkout", "-fb", branchName).Run()
+				var version string
+				for _, ver := range regexp.MustCompile("([0-9]+)").FindAllString(tag, -1) {
+					version = version + ver + "."
+				}
+				version = strings.TrimRight(version, ".")
+				session.Command("git", "checkout", "-fb", repoName+"/"+version).Run()
 				session.Command("ls").Command("grep", "-v", "-E", "'.git'").Command("xargs", "rm", "-r").Run()
 
 				//package.json生成
-				assined := regexp.MustCompile("([0-9]+)")
-				group := assined.FindAllString(tag, -1)
-				var version string
-				for _, ver := range group {
-					version = version + ver + "."
-				}
-				conf.Pack.Version = strings.TrimRight(version, ".")
+				conf.Pack.Version = version
 				if conf.Pack.Dependencis == nil {
 					conf.Pack.Dependencis = map[string]string{}
 				}
@@ -182,7 +180,7 @@ func main() {
 				err = session.Command("git", "commit", "-m", tag+" "+time.Now().Format("2006/01/02")).Run()
 				if err != nil {
 					if err.Error() == "nothing to commit, working tree clean" {
-						println(branchName + " No update")
+						println("No update")
 					}
 					continue
 				}
