@@ -59,11 +59,6 @@ func main() {
 		println("CloneError")
 		log.Fatal(err)
 	}
-	// branches, _ := npmRepo.Branches()
-	// branches.ForEach(func(c *plumbing.Reference) error {
-	// 	fmt.Println(c)
-	// 	return nil
-	// })
 	npmRepoWork, _ := npmRepo.Worktree()
 	masterCheckOpt := &git.CheckoutOptions{
 		Branch: "master",
@@ -79,31 +74,26 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	session := sh.NewSession()
-	session.ShowCMD = true
-	session.SetDir(npmDir)
-	session.Command("git", "config", "--local", "user.name", "KappaBull").Run()
-	session.Command("git", "config", "--local", "user.email", "kappa8v11@gmail.com").Run()
-	for _, filePath := range filePaths {
-		session.SetDir(npmDir)
-		err = npmRepoWork.Checkout(masterCheckOpt)
-		if err != nil && err.Error() != "a branch named \"master\" already exists" {
-			println("LoopCheckOutError")
-			log.Fatal(err)
-			break
-		}
-		//session.Command("git", "checkout", "-f", "master").Run()
-		var conf Config
+	var confs Config[len(filePaths)]
+	for i, filePath := range filePaths {
 		buf, err := ioutil.ReadFile(filePath)
 		if err != nil {
 			log.Fatal(err)
 			continue
 		}
-		err = yaml.Unmarshal(buf, &conf)
+		err = yaml.Unmarshal(buf, &confs[i])
 		if err != nil {
 			log.Fatal(err)
 			continue
 		}
+	}
+
+	session := sh.NewSession()
+	session.ShowCMD = true
+	session.SetDir(npmDir)
+	session.Command("git", "config", "--local", "user.name", "KappaBull").Run()
+	session.Command("git", "config", "--local", "user.email", "kappa8v11@gmail.com").Run()
+	for _, conf := range confs {
 		splits := strings.Split(conf.Repository, "/")
 		repoName := strings.Replace(splits[len(splits)-1], ".git", "", -1)
 		dir, _ := ioutil.TempDir("", repoName)
