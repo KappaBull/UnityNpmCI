@@ -133,8 +133,13 @@ func main() {
 
 				session.SetDir(npmDir)
 				var version string
-				for _, ver := range regexp.MustCompile("([0-9]+)").FindAllString(tag, -1) {
+				var count int
+				for i, ver := range regexp.MustCompile("([0-9]+)").FindAllString(tag, -1) {
 					version = version + ver + "."
+					count = i
+				}
+				for i := count; i < 2; i++ {
+					version = version + "0."
 				}
 				version = strings.TrimRight(version, ".")
 				session.Command("git", "checkout", "-fb", repoName+"/"+version).Run()
