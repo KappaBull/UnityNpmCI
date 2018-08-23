@@ -249,12 +249,13 @@ func ignoreAllRemove(dir string, ignores ...string) {
 		if isIgnore {
 			continue
 		}
+		fileFullPath := dir + "/" + fileinfo.Name()
 		if fileinfo.IsDir() {
-			if err := os.RemoveAll(dir + fileinfo.Name()); err != nil {
+			if err := os.RemoveAll(fileFullPath); err != nil {
 				fmt.Println(err)
 			}
 		} else {
-			if err := os.Remove(dir + fileinfo.Name()); err != nil {
+			if err := os.Remove(fileFullPath); err != nil {
 				fmt.Println(err)
 			}
 		}
