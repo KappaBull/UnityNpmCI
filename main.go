@@ -15,6 +15,9 @@ import (
 	sh "github.com/codeskyblue/go-sh"
 	"golang.org/x/crypto/ssh"
 	git "gopkg.in/src-d/go-git.v4"
+	"gopkg.in/src-d/go-git.v4/config"
+	"gopkg.in/src-d/go-git.v4/plumbing"
+	"gopkg.in/src-d/go-git.v4/plumbing/object"
 	gitssh "gopkg.in/src-d/go-git.v4/plumbing/transport/ssh"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -96,8 +99,8 @@ func main() {
 	session := sh.NewSession()
 	session.ShowCMD = true
 	session.SetDir(npmDir)
-	session.Command("git", "config", "--local", "user.name", "KappaBull").Run()
-	session.Command("git", "config", "--local", "user.email", "kappa8v11@gmail.com").Run()
+	// session.Command("git", "config", "--local", "user.name", "KappaBull").Run()
+	// session.Command("git", "config", "--local", "user.email", "kappa8v11@gmail.com").Run()
 	for _, conf := range confs {
 		splits := strings.Split(conf.Repository, "/")
 		repoName := strings.Replace(splits[len(splits)-1], ".git", "", -1)
@@ -137,7 +140,8 @@ func main() {
 
 				//ブランチ作成
 				session.SetDir(npmDir)
-				session.Command("git", "checkout", "-fb", repoName+"/"+version).Run()
+				branchName := repoName + "/" + version
+				session.Command("git", "checkout", "-fb", branchName).Run()
 
 				ignoreAllRemove(npmDir, ".git")
 
@@ -167,24 +171,45 @@ func main() {
 					continue
 				}
 
-				err = session.Command("git", "add", "--all").Run()
+				// err = session.Command("git", "add", "--all").Run()
+				// if err != nil {
+				// 	log.Fatal(err)
+				// 	continue
+				// }
+
+				// err = session.Command("git", "commit", "-m", tag+" "+time.Now().Format("2006/01/02")).Run()
+				// if err != nil {
+				// 	if err.Error() == "nothing to commit, working tree clean" {
+				// 		println("No update")
+				// 	}
+				// 	continue
+				// }
+
+				err = npmRepoWork.AddGlob("*")
 				if err != nil {
-					log.Fatal(err)
+					log.Println(err)
 					continue
 				}
-
-				err = session.Command("git", "commit", "-m", tag+" "+time.Now().Format("2006/01/02")).Run()
+				ref := plumbing.ReferenceName(branchName)
 				if err != nil {
-					if err.Error() == "nothing to commit, working tree clean" {
-						println("No update")
-					}
+					log.Println(err)
 					continue
 				}
-
+				hash, _ := npmRepoWork.Commit(tag+" "+time.Now().Format("2006/01/02"), &git.CommitOptions{
+					Author: &object.Signature{
+						Name:  "KappaBull",
+						Email: "kappa8v11@gmail.com",
+						When:  time.Now(),
+					},
+				})
+				npmRepo.Storer.SetReference(plumbing.NewReferenceFromStrings(branchName, hash.String()))
 				err = npmRepo.Push(&git.PushOptions{
 					RemoteName: "origin",
-					Progress:   os.Stdout,
-					Auth:       auth,
+					RefSpecs: []config.RefSpec{
+						config.RefSpec(ref + ":" + plumbing.ReferenceName("refs/heads/"+branchName)),
+					},
+					Progress: os.Stdout,
+					Auth:     auth,
 				})
 				if err != nil {
 					log.Println(err)
