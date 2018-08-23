@@ -141,7 +141,22 @@ func main() {
 				//ブランチ作成
 				session.SetDir(npmDir)
 				branchName := repoName + "/" + version
-				session.Command("git", "checkout", "-fb", branchName).Run()
+				ref := plumbing.ReferenceName(branchName)
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+				err = npmRepoWork.Checkout(&git.CheckoutOptions{
+					Branch: ref,
+					Force:  true,
+					Create: true,
+				})
+				if err != nil {
+					println("CheckOutError")
+					log.Fatal(err)
+					continue
+				}
+				// session.Command("git", "checkout", "-fb", branchName).Run()
 
 				ignoreAllRemove(npmDir, ".git")
 
@@ -186,11 +201,6 @@ func main() {
 				// }
 
 				err = npmRepoWork.AddGlob("*")
-				if err != nil {
-					log.Println(err)
-					continue
-				}
-				ref := plumbing.ReferenceName(branchName)
 				if err != nil {
 					log.Println(err)
 					continue
