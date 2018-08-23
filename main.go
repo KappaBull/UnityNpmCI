@@ -37,6 +37,10 @@ type PackageJSON struct {
 	Dependencis map[string]string `json:"dependencis"`
 }
 
+const (
+	npmJson = "package.json"
+)
+
 func main() {
 
 	//鍵関連
@@ -101,7 +105,8 @@ func main() {
 		session.Command("git", "clone", conf.Repository).Run()
 		dir = dir + "/" + repoName
 		session.SetDir(dir)
-		if conf.Check == "tag" {
+		switch conf.Check {
+		case "tag":
 			out, err := session.Command("git", "tag").Output()
 			if err != nil {
 				println("GitTagError")
@@ -113,25 +118,11 @@ func main() {
 				session.SetDir(dir)
 				session.Command("git", "checkout", "-f", tag).Run()
 
-				//CopyFileCheck
-				if exists(dir+conf.License) == false {
-					println("Not Found License File")
-					continue
-				}
-				var allTargetFound bool
-				allTargetFound = true
-				for _, copyTarget := range conf.Copy {
-					allTargetFound = exists(dir + copyTarget)
-					if allTargetFound == false {
-						println("Not Found:" + copyTarget)
-						break
-					}
-				}
-				if allTargetFound == false {
+				if copyFileCheck(dir, conf) == false {
 					continue
 				}
 
-				session.SetDir(npmDir)
+				//Tag名からバージョンを生成
 				var version string
 				var count int
 				for i, ver := range regexp.MustCompile("([0-9]+)").FindAllString(tag, -1) {
@@ -142,23 +133,15 @@ func main() {
 					version = version + "0."
 				}
 				version = strings.TrimRight(version, ".")
+
+				//ブランチ作成
+				session.SetDir(npmDir)
 				session.Command("git", "checkout", "-fb", repoName+"/"+version).Run()
 				session.Command("ls").Command("grep", "-v", "-E", "'.git'").Command("xargs", "rm", "-r").Run()
 
 				//package.json生成
 				conf.Pack.Version = version
-				if conf.Pack.Dependencis == nil {
-					conf.Pack.Dependencis = map[string]string{}
-				}
-				if conf.Pack.Unity == "" {
-					conf.Pack.Unity = "2018.1"
-				}
-				if conf.Pack.Display == "" {
-					conf.Pack.Display = repoName
-				}
-				jsonBytes, _ := json.Marshal(conf.Pack)
-				if err := ioutil.WriteFile(npmDir+"/package.json", jsonBytes, 0644); err != nil {
-					println("File I/O Error")
+				if genPackageJSON(conf.Pack, repoName, npmDir) == false {
 					continue
 				}
 
@@ -173,6 +156,12 @@ func main() {
 					}
 				}
 				if copyFileErr != nil {
+					continue
+				}
+
+				//gitignore生成
+				if err := ioutil.WriteFile(npmDir+"/.gitignore", []byte(npmJson+".meta\n"+conf.License+".meta"), 0644); err != nil {
+					println("File I/O Error")
 					continue
 				}
 
@@ -204,6 +193,47 @@ func main() {
 	}
 }
 
+func copyFileCheck(dir string, conf Config) bool {
+	if exists(dir+conf.License) == false {
+		println("Not Found License File")
+		return false
+	}
+	var allTargetFound bool
+	allTargetFound = true
+	for _, copyTarget := range conf.Copy {
+		allTargetFound = exists(dir + copyTarget)
+		if allTargetFound == false {
+			println("Not Found:" + copyTarget)
+			break
+		}
+	}
+	if allTargetFound == false {
+		return false
+	}
+	return true
+}
+
+func genPackageJSON(pack PackageJSON, repoName string, npmDir string) bool {
+	if pack.Version == "" {
+		pack.Version = "0.0.0"
+	}
+	if pack.Dependencis == nil {
+		pack.Dependencis = map[string]string{}
+	}
+	if pack.Unity == "" {
+		pack.Unity = "2018.1"
+	}
+	if pack.Display == "" {
+		pack.Display = repoName
+	}
+	jsonBytes, _ := json.Marshal(pack)
+	if err := ioutil.WriteFile(npmDir+"/"+npmJson, jsonBytes, 0644); err != nil {
+		println("File I/O Error")
+		return false
+	}
+	return true
+}
+
 func exists(filename string) bool {
 	_, err := os.Stat(filename)
 	return err == nil
@@ -211,8 +241,4 @@ func exists(filename string) bool {
 
 func bstring(b []byte) string {
 	return *(*string)(unsafe.Pointer(&b))
-}
-
-func sbytes(s string) []byte {
-	return *(*[]byte)(unsafe.Pointer(&s))
 }
