@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -137,7 +138,8 @@ func main() {
 				//ブランチ作成
 				session.SetDir(npmDir)
 				session.Command("git", "checkout", "-fb", repoName+"/"+version).Run()
-				session.Command("ls").Command("grep", "-v", "-E", "'.git'").Command("xargs", "rm", "-r").Run()
+
+				ignoreAllRemove(npmDir, ".git")
 
 				//package.json生成
 				conf.Pack.Version = version
@@ -232,6 +234,31 @@ func genPackageJSON(pack PackageJSON, repoName string, npmDir string) bool {
 		return false
 	}
 	return true
+}
+
+func ignoreAllRemove(dir string, ignores ...string) {
+	fileinfos, _ := ioutil.ReadDir(dir)
+	for _, fileinfo := range fileinfos {
+		var isIgnore bool
+		for _, ignoreName := range ignores {
+			isIgnore = fileinfo.Name() == ignoreName
+			if isIgnore {
+				break
+			}
+		}
+		if isIgnore {
+			continue
+		}
+		if fileinfo.IsDir() {
+			if err := os.RemoveAll(dir + fileinfo.Name()); err != nil {
+				fmt.Println(err)
+			}
+		} else {
+			if err := os.Remove(dir + fileinfo.Name()); err != nil {
+				fmt.Println(err)
+			}
+		}
+	}
 }
 
 func exists(filename string) bool {
