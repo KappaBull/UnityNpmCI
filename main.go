@@ -119,6 +119,7 @@ func main() {
 			}
 
 			for _, tag := range strings.Fields(strings.Replace(bstring(out), "\\n", " ", -1)) {
+				err = nil
 				session.SetDir(dir)
 				session.Command("git", "checkout", "-f", tag).Run()
 
@@ -214,21 +215,17 @@ func main() {
 				}
 				npmRepo.Storer.SetReference(plumbing.NewReferenceFromStrings(branchName, hash.String()))
 				fmt.Println("Commit:" + commitComment + " Hash:" + hash.String())
-
-				remote, remoteErr := npmRepo.Remote("origin")
-				if remoteErr == nil {
-					err = remote.Push(&git.PushOptions{
-						RefSpecs: []config.RefSpec{
-							config.RefSpec(ref + ":" + plumbing.ReferenceName("refs/heads/"+branchName)),
-						},
-						Progress: os.Stdout,
-						Auth:     auth,
-					})
-					if err != nil {
-						log.Println("PushError")
-						log.Println(err)
-						continue
-					}
+				err = npmRepo.Push(&git.PushOptions{
+					RemoteName: "origin",
+					Progress:   os.Stdout,
+					RefSpecs: []config.RefSpec{
+						config.RefSpec(ref + ":" + plumbing.ReferenceName("refs/heads/"+branchName)),
+					},
+					Auth: auth,
+				})
+				if err != nil {
+					log.Println("PushError")
+					log.Println(err)
 				}
 			}
 		}
