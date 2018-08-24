@@ -222,6 +222,7 @@ func main() {
 							config.RefSpec(ref + ":" + plumbing.ReferenceName("refs/heads/"+branchName)),
 						},
 						Progress: os.Stdout,
+						Auth:     auth,
 					})
 					if err != nil {
 						log.Println("PushError")
