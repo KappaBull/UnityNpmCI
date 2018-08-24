@@ -102,12 +102,6 @@ func main() {
 	session.ShowCMD = true
 	session.SetDir(npmDir)
 	for _, conf := range confs {
-		err = npmRepoWork.Checkout(masterCheckOpt)
-		if err != nil {
-			println("CheckOutError")
-			log.Fatal(err)
-		}
-
 		splits := strings.Split(conf.Repository, "/")
 		repoName := strings.Replace(splits[len(splits)-1], ".git", "", -1)
 		dir, _ := ioutil.TempDir("", repoName)
@@ -236,6 +230,13 @@ func main() {
 					log.Println(err)
 				}
 			}
+		}
+
+		//全部終わったら一旦Masterブランチへ戻す
+		err = npmRepoWork.Checkout(masterCheckOpt)
+		if err != nil {
+			println("CheckOutError")
+			log.Fatal(err)
 		}
 	}
 }
