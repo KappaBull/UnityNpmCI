@@ -168,22 +168,21 @@ func main() {
 				if err = os.Rename(dir+conf.License, npmDir+"/"+filepath.Base(conf.License)); err != nil {
 					continue
 				}
-				// _, err = npmRepoWork.Add(filepath.Base(conf.License))
-				// if err != nil {
-				// 	log.Println(filepath.Base(conf.License) + " AddError")
-				// 	log.Println(err)
-				// 	continue
-				// }
+				_, err = npmRepoWork.Add(filepath.Base(conf.License))
+				if err != nil {
+					log.Println(filepath.Base(conf.License) + " AddError")
+					log.Println(err)
+				}
 				var copyFileErr error
 				for _, copyTarget := range conf.Copy {
 					if copyFileErr = os.Rename(dir+copyTarget, npmDir+"/"+filepath.Base(copyTarget)); copyFileErr != nil {
 						break
 					}
-					// _, err = npmRepoWork.Add(filepath.Base(copyTarget))
-					// if err != nil {
-					// 	log.Println(filepath.Base(copyTarget) + " AddError")
-					// 	log.Println(err)
-					// }
+					_, err = npmRepoWork.Add(filepath.Base(copyTarget))
+					if err != nil {
+						log.Println(filepath.Base(copyTarget) + " AddError")
+						log.Println(err)
+					}
 				}
 				if copyFileErr != nil {
 					continue
@@ -193,13 +192,13 @@ func main() {
 					println("File I/O Error")
 					continue
 				}
-				// _, err = npmRepoWork.Add(ignoreFIlE)
-				// if err != nil {
-				// 	log.Println(ignoreFIlE + " AddError")
-				// 	log.Println(err)
-				// }
-
-				hash, comitErr := npmRepoWork.Commit(tag+" "+time.Now().Format("2006/01/02"), &git.CommitOptions{
+				_, err = npmRepoWork.Add(ignoreFIlE)
+				if err != nil {
+					log.Println(ignoreFIlE + " AddError")
+					log.Println(err)
+				}
+				commitComment := tag + " " + time.Now().Format("2006/01/02")
+				hash, comitErr := npmRepoWork.Commit(commitComment, &git.CommitOptions{
 					All: true,
 					Author: &object.Signature{
 						Name:  "KappaBull",
@@ -213,6 +212,8 @@ func main() {
 					continue
 				}
 				npmRepo.Storer.SetReference(plumbing.NewReferenceFromStrings(branchName, hash.String()))
+				fmt.Println("Commit:" + commitComment + " Hash:" + hash.String())
+
 				err = npmRepo.Push(&git.PushOptions{
 					RemoteName: "origin",
 					RefSpecs: []config.RefSpec{
