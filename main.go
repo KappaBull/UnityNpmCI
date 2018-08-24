@@ -42,7 +42,8 @@ type PackageJSON struct {
 }
 
 const (
-	npmJson = "package.json"
+	npmJSON     = "package.json"
+	npmRepoName = "UnityNpm"
 )
 
 func main() {
@@ -56,10 +57,9 @@ func main() {
 	}
 	auth := &gitssh.PublicKeys{User: "git", Signer: signer}
 
-	dirName := "UnityNpm"
-	npmDir, _ := ioutil.TempDir("", dirName)
+	npmDir, _ := ioutil.TempDir("", npmRepoName)
 	npmRepo, cloneErr := git.PlainClone(npmDir, false, &git.CloneOptions{
-		URL:      "git@github.com:KappaBull/UnityNpm",
+		URL:      "git@github.com:KappaBull/" + npmRepoName,
 		Progress: os.Stdout,
 		Auth:     auth,
 	})
@@ -181,7 +181,7 @@ func main() {
 				}
 
 				//gitignore生成
-				if err := ioutil.WriteFile(npmDir+"/.gitignore", []byte(npmJson+".meta\n"+conf.License+".meta"), 0644); err != nil {
+				if err := ioutil.WriteFile(npmDir+"/.gitignore", []byte(npmJSON+".meta\n"+conf.License+".meta"), 0644); err != nil {
 					println("File I/O Error")
 					continue
 				}
@@ -200,7 +200,7 @@ func main() {
 				// 	continue
 				// }
 
-				err = npmRepoWork.AddGlob("*")
+				_, err = npmRepoWork.Add("*")
 				if err != nil {
 					log.Println(err)
 					continue
@@ -264,7 +264,7 @@ func genPackageJSON(pack PackageJSON, repoName string, npmDir string) bool {
 		pack.Display = repoName
 	}
 	jsonBytes, _ := json.Marshal(pack)
-	if err := ioutil.WriteFile(npmDir+"/"+npmJson, jsonBytes, 0644); err != nil {
+	if err := ioutil.WriteFile(npmDir+"/"+npmJSON, jsonBytes, 0644); err != nil {
 		println("File I/O Error")
 		return false
 	}
