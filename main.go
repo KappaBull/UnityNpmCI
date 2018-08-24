@@ -44,6 +44,7 @@ type PackageJSON struct {
 const (
 	npmJSON     = "package.json"
 	npmRepoName = "UnityNpm"
+	ignoreFIlE  = ".gitignore"
 )
 
 func main() {
@@ -170,42 +171,44 @@ func main() {
 				if err = os.Rename(dir+conf.License, npmDir+"/"+filepath.Base(conf.License)); err != nil {
 					continue
 				}
+				// _, err = npmRepoWork.Add(filepath.Base(conf.License))
+				// if err != nil {
+				// 	log.Println(filepath.Base(conf.License) + " AddError")
+				// 	log.Println(err)
+				// 	continue
+				// }
 				var copyFileErr error
 				for _, copyTarget := range conf.Copy {
 					if copyFileErr = os.Rename(dir+copyTarget, npmDir+"/"+filepath.Base(copyTarget)); copyFileErr != nil {
 						break
 					}
+					// _, err = npmRepoWork.Add(filepath.Base(copyTarget))
+					// if err != nil {
+					// 	log.Println(filepath.Base(copyTarget) + " AddError")
+					// 	log.Println(err)
+					// }
 				}
 				if copyFileErr != nil {
 					continue
 				}
-
 				//gitignore生成
-				if err := ioutil.WriteFile(npmDir+"/.gitignore", []byte(npmJSON+".meta\n"+conf.License+".meta"), 0644); err != nil {
+				if err := ioutil.WriteFile(npmDir+"/"+ignoreFIlE, []byte(npmJSON+".meta\n"+conf.License+".meta"), 0644); err != nil {
 					println("File I/O Error")
 					continue
 				}
-
-				// err = session.Command("git", "add", "--all").Run()
+				// _, err = npmRepoWork.Add("ignoreFIlE")
 				// if err != nil {
-				// 	log.Fatal(err)
-				// 	continue
+				// 	log.Println(ignoreFIlE + " AddError")
+				// 	log.Println(err)
 				// }
 
-				// err = session.Command("git", "commit", "-m", tag+" "+time.Now().Format("2006/01/02")).Run()
-				// if err != nil {
-				// 	if err.Error() == "nothing to commit, working tree clean" {
-				// 		println("No update")
-				// 	}
-				// 	continue
-				// }
-
-				_, err = npmRepoWork.Add("*")
+				_, err = npmRepoWork.Add("--all")
 				if err != nil {
-					log.Println("AddError")
+					log.Println("--all AddError")
 					log.Println(err)
 					continue
 				}
+
 				hash, comitErr := npmRepoWork.Commit(tag+" "+time.Now().Format("2006/01/02"), &git.CommitOptions{
 					Author: &object.Signature{
 						Name:  "KappaBull",
