@@ -102,6 +102,12 @@ func main() {
 	session.ShowCMD = true
 	session.SetDir(npmDir)
 	for _, conf := range confs {
+		err = npmRepoWork.Checkout(masterCheckOpt)
+		if err != nil {
+			println("CheckOutError")
+			log.Fatal(err)
+		}
+
 		splits := strings.Split(conf.Repository, "/")
 		repoName := strings.Replace(splits[len(splits)-1], ".git", "", -1)
 		dir, _ := ioutil.TempDir("", repoName)
@@ -213,8 +219,10 @@ func main() {
 					log.Println(comitErr)
 					continue
 				}
-				npmRepo.Storer.SetReference(plumbing.NewReferenceFromStrings(branchName, hash.String()))
+				obj, err := npmRepo.CommitObject(hash)
 				fmt.Println("Commit:" + commitComment + " Hash:" + hash.String())
+				fmt.Println(obj)
+				// npmRepo.Storer.SetReference(plumbing.NewReferenceFromStrings(branchName, hash.String()))
 				err = npmRepo.Push(&git.PushOptions{
 					RemoteName: "origin",
 					Progress:   os.Stdout,
