@@ -70,9 +70,8 @@ func main() {
 	}
 	npmRepoWork, _ := npmRepo.Worktree()
 	masterCheckOpt := &git.CheckoutOptions{
-		Branch: "master",
+		Branch: plumbing.ReferenceName("master"),
 		Force:  true,
-		Create: true,
 	}
 	err = npmRepoWork.Checkout(masterCheckOpt)
 	if err != nil {
@@ -141,21 +140,36 @@ func main() {
 
 				//ブランチ作成
 				session.SetDir(npmDir)
-				branchName := repoName + "/" + version
-				ref := plumbing.ReferenceName(branchName)
-				if err != nil {
-					log.Println(err)
-					continue
-				}
-				err = npmRepoWork.Checkout(&git.CheckoutOptions{
-					Branch: ref,
-					Force:  true,
-					Create: true,
-				})
-				if err != nil {
-					println("CheckOutError")
-					log.Fatal(err)
-					continue
+				branchNameStr := repoName + "/" + version
+				// ref := plumbing.ReferenceName(branchName)
+				// if err != nil {
+				// 	log.Println(err)
+				// 	continue
+				// }
+
+				branch, err := npmRepo.Branch(branchNameStr)
+
+				if err == nil {
+					err = npmRepoWork.Checkout(&git.CheckoutOptions{
+						Branch: branch.Merge,
+						Force:  true,
+					})
+					if err != nil {
+						println("CheckOutError")
+						log.Fatal(err)
+						continue
+					}
+				} else {
+					err = npmRepo.CreateBranch(&config.Branch{
+						Merge:  plumbing.ReferenceName(branchNameStr),
+						Name:   branchNameStr,
+						Remote: "refs/heads/" + branchNameStr,
+					})
+					if err != nil {
+						println("CreateBranchError")
+						log.Fatal(err)
+						continue
+					}
 				}
 
 				ignoreAllRemove(npmDir, ".git")
@@ -221,7 +235,7 @@ func main() {
 					RemoteName: "origin",
 					Progress:   os.Stdout,
 					RefSpecs: []config.RefSpec{
-						config.RefSpec(ref + ":" + plumbing.ReferenceName("refs/heads/"+branchName)),
+						config.RefSpec(branch.Merge + ":" + plumbing.ReferenceName("refs/heads/"+branchNameStr)),
 					},
 					Auth: auth,
 				})
