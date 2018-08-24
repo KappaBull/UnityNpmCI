@@ -65,7 +65,7 @@ func main() {
 	})
 	if cloneErr != nil {
 		println("CloneError")
-		log.Fatal(err)
+		log.Fatal(cloneErr)
 	}
 	npmRepoWork, _ := npmRepo.Worktree()
 	masterCheckOpt := &git.CheckoutOptions{
@@ -202,16 +202,22 @@ func main() {
 
 				_, err = npmRepoWork.Add("*")
 				if err != nil {
+					log.Println("AddError")
 					log.Println(err)
 					continue
 				}
-				hash, _ := npmRepoWork.Commit(tag+" "+time.Now().Format("2006/01/02"), &git.CommitOptions{
+				hash, comitErr := npmRepoWork.Commit(tag+" "+time.Now().Format("2006/01/02"), &git.CommitOptions{
 					Author: &object.Signature{
 						Name:  "KappaBull",
 						Email: "kappa8v11@gmail.com",
 						When:  time.Now(),
 					},
 				})
+				if comitErr != nil {
+					log.Println("CommitError")
+					log.Println(comitErr)
+					continue
+				}
 				npmRepo.Storer.SetReference(plumbing.NewReferenceFromStrings(branchName, hash.String()))
 				err = npmRepo.Push(&git.PushOptions{
 					RemoteName: "origin",
@@ -222,6 +228,7 @@ func main() {
 					Auth:     auth,
 				})
 				if err != nil {
+					log.Println("PushError")
 					log.Println(err)
 					continue
 				}
