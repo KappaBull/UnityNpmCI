@@ -79,6 +79,7 @@ func main() {
 		println("CheckOutError")
 		log.Fatal(err)
 	}
+
 	filePaths, err := filepath.Glob(npmDir + "/*.yaml")
 	if err != nil {
 		log.Fatal(err)
@@ -214,18 +215,19 @@ func main() {
 				npmRepo.Storer.SetReference(plumbing.NewReferenceFromStrings(branchName, hash.String()))
 				fmt.Println("Commit:" + commitComment + " Hash:" + hash.String())
 
-				err = npmRepo.Push(&git.PushOptions{
-					RemoteName: "origin",
-					RefSpecs: []config.RefSpec{
-						config.RefSpec(ref + ":" + plumbing.ReferenceName("refs/heads/"+branchName)),
-					},
-					Progress: os.Stdout,
-					Auth:     auth,
-				})
-				if err != nil {
-					log.Println("PushError")
-					log.Println(err)
-					continue
+				remote, remoteErr := npmRepo.Remote("origin")
+				if remoteErr == nil {
+					err = remote.Push(&git.PushOptions{
+						RefSpecs: []config.RefSpec{
+							config.RefSpec(ref + ":" + plumbing.ReferenceName("refs/heads/"+branchName)),
+						},
+						Progress: os.Stdout,
+					})
+					if err != nil {
+						log.Println("PushError")
+						log.Println(err)
+						continue
+					}
 				}
 			}
 		}
