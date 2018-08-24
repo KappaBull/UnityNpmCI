@@ -168,22 +168,22 @@ func main() {
 				if err = os.Rename(dir+conf.License, npmDir+"/"+filepath.Base(conf.License)); err != nil {
 					continue
 				}
-				_, err = npmRepoWork.Add(filepath.Base(conf.License))
-				if err != nil {
-					log.Println(filepath.Base(conf.License) + " AddError")
-					log.Println(err)
-					continue
-				}
+				// _, err = npmRepoWork.Add(filepath.Base(conf.License))
+				// if err != nil {
+				// 	log.Println(filepath.Base(conf.License) + " AddError")
+				// 	log.Println(err)
+				// 	continue
+				// }
 				var copyFileErr error
 				for _, copyTarget := range conf.Copy {
 					if copyFileErr = os.Rename(dir+copyTarget, npmDir+"/"+filepath.Base(copyTarget)); copyFileErr != nil {
 						break
 					}
-					_, err = npmRepoWork.Add(filepath.Base(copyTarget))
-					if err != nil {
-						log.Println(filepath.Base(copyTarget) + " AddError")
-						log.Println(err)
-					}
+					// _, err = npmRepoWork.Add(filepath.Base(copyTarget))
+					// if err != nil {
+					// 	log.Println(filepath.Base(copyTarget) + " AddError")
+					// 	log.Println(err)
+					// }
 				}
 				if copyFileErr != nil {
 					continue
@@ -193,13 +193,14 @@ func main() {
 					println("File I/O Error")
 					continue
 				}
-				_, err = npmRepoWork.Add("ignoreFIlE")
-				if err != nil {
-					log.Println(ignoreFIlE + " AddError")
-					log.Println(err)
-				}
+				// _, err = npmRepoWork.Add(ignoreFIlE)
+				// if err != nil {
+				// 	log.Println(ignoreFIlE + " AddError")
+				// 	log.Println(err)
+				// }
 
 				hash, comitErr := npmRepoWork.Commit(tag+" "+time.Now().Format("2006/01/02"), &git.CommitOptions{
+					All: true,
 					Author: &object.Signature{
 						Name:  "KappaBull",
 						Email: "kappa8v11@gmail.com",
@@ -294,6 +295,7 @@ func ignoreAllRemove(dir string, ignores ...string) {
 				fmt.Println(err)
 			}
 		}
+		fmt.Println("Del:" + fileFullPath)
 	}
 }
 
