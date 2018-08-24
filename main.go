@@ -72,6 +72,7 @@ func main() {
 	masterCheckOpt := &git.CheckoutOptions{
 		Branch: plumbing.ReferenceName("master"),
 		Force:  true,
+        Create:  true,
 	}
 	err = npmRepoWork.Checkout(masterCheckOpt)
 	if err != nil {
