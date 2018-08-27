@@ -143,7 +143,7 @@ func main() {
 				session.SetDir(npmDir)
 				branchNameStr := repoName + "/" + version
 				//TODO: developにて実装
-				ref := plumbing.ReferenceName(branchNameStr)
+				// ref := plumbing.ReferenceName(branchNameStr)
 				// if err != nil {
 				// 	log.Println(err)
 				// 	continue
@@ -172,8 +172,12 @@ func main() {
 				// 	}
 				// }
 				session.SetDir(npmDir)
-				session.Command("git", "checkout", "-fb", branchNameStr).Run()
-				session.Command("git", "pull", "origin", branchNameStr).Run()
+				err = session.Command("git", "checkout", "-f", branchNameStr).Run()
+				if err != nil {
+					session.Command("git", "checkout", "-fb", branchNameStr).Run()
+					err = nil
+				}
+				// session.Command("git", "pull", "origin", branchNameStr).Run()
 
 				ignoreAllRemove(npmDir, ".git")
 
