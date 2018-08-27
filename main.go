@@ -147,7 +147,7 @@ func main() {
 				// 	continue
 				// }
 
-				branch, err := npmRepo.Branch(branchNameStr)
+				branch, err := npmRepo.Branch("refs/heads/" + branchNameStr)
 
 				if err == nil {
 					err = npmRepoWork.Checkout(&git.CheckoutOptions{
@@ -230,6 +230,19 @@ func main() {
 				obj, err := npmRepo.CommitObject(hash)
 				fmt.Println("Commit:" + commitComment + " Hash:" + hash.String())
 				fmt.Println(obj)
+				// err = session.Command("git", "add", "--all").Run()
+				// if err != nil {
+				// 	log.Fatal(err)
+				// 	continue
+				// }
+				// err = session.Command("git", "commit", "-m", tag+" "+time.Now().Format("2006/01/02")).Run()
+				// if err != nil {
+				// 	if err.Error() == "nothing to commit, working tree clean" {
+				// 		println("No update")
+				// 	}
+				// 	continue
+				// }
+
 				// npmRepo.Storer.SetReference(plumbing.NewReferenceFromStrings(branchName, hash.String()))
 				err = npmRepo.Push(&git.PushOptions{
 					RemoteName: "origin",
