@@ -258,6 +258,7 @@ func main() {
 				if err != nil {
 					log.Println("PushError")
 					log.Println(err)
+					err = nil
 				}
 			}
 		}
