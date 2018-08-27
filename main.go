@@ -15,6 +15,7 @@ import (
 	sh "github.com/codeskyblue/go-sh"
 	"golang.org/x/crypto/ssh"
 	git "gopkg.in/src-d/go-git.v4"
+	"gopkg.in/src-d/go-git.v4/config"
 	"gopkg.in/src-d/go-git.v4/plumbing"
 	gitssh "gopkg.in/src-d/go-git.v4/plumbing/transport/ssh"
 	yaml "gopkg.in/yaml.v2"
@@ -143,7 +144,7 @@ func main() {
 				session.SetDir(npmDir)
 				branchNameStr := repoName + "/" + version
 				//TODO: developにて実装
-				// ref := plumbing.ReferenceName(branchName)
+				ref := plumbing.ReferenceName(branchNameStr)
 				// if err != nil {
 				// 	log.Println(err)
 				// 	continue
@@ -173,6 +174,8 @@ func main() {
 				// }
 				session.SetDir(npmDir)
 				session.Command("git", "checkout", "-fb", branchNameStr).Run()
+
+				session.Command("git", "pull", branchNameStr).Run()
 
 				ignoreAllRemove(npmDir, ".git")
 
@@ -250,9 +253,9 @@ func main() {
 				err = npmRepo.Push(&git.PushOptions{
 					RemoteName: "origin",
 					Progress:   os.Stdout,
-					// RefSpecs: []config.RefSpec{
-					// 	config.RefSpec(branch.Merge + ":" + plumbing.ReferenceName("refs/heads/"+branchNameStr)),
-					// },
+					RefSpecs: []config.RefSpec{
+						config.RefSpec(ref + ":" + plumbing.ReferenceName("refs/heads/"+branchNameStr)),
+					},
 					Auth: auth,
 				})
 				if err != nil {
