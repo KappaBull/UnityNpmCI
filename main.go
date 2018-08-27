@@ -15,7 +15,6 @@ import (
 	sh "github.com/codeskyblue/go-sh"
 	"golang.org/x/crypto/ssh"
 	git "gopkg.in/src-d/go-git.v4"
-	"gopkg.in/src-d/go-git.v4/config"
 	"gopkg.in/src-d/go-git.v4/plumbing"
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
 	gitssh "gopkg.in/src-d/go-git.v4/plumbing/transport/ssh"
@@ -72,7 +71,7 @@ func main() {
 	masterCheckOpt := &git.CheckoutOptions{
 		Branch: plumbing.ReferenceName("master"),
 		Force:  true,
-        Create:  true,
+		Create: true,
 	}
 	err = npmRepoWork.Checkout(masterCheckOpt)
 	if err != nil {
@@ -142,36 +141,37 @@ func main() {
 				//ブランチ作成
 				session.SetDir(npmDir)
 				branchNameStr := repoName + "/" + version
+				//TODO: developにて実装
 				// ref := plumbing.ReferenceName(branchName)
 				// if err != nil {
 				// 	log.Println(err)
 				// 	continue
 				// }
-
-				branch, err := npmRepo.Branch("refs/heads/" + branchNameStr)
-
-				if err == nil {
-					err = npmRepoWork.Checkout(&git.CheckoutOptions{
-						Branch: branch.Merge,
-						Force:  true,
-					})
-					if err != nil {
-						println("CheckOutError")
-						log.Fatal(err)
-						continue
-					}
-				} else {
-					err = npmRepo.CreateBranch(&config.Branch{
-						Merge:  plumbing.ReferenceName(branchNameStr),
-						Name:   branchNameStr,
-						Remote: "refs/heads/" + branchNameStr,
-					})
-					if err != nil {
-						println("CreateBranchError")
-						log.Fatal(err)
-						continue
-					}
-				}
+				// branch, err := npmRepo.Branch("refs/heads/" + branchNameStr)
+				// if err == nil {
+				// 	err = npmRepoWork.Checkout(&git.CheckoutOptions{
+				// 		Branch: branch.Merge,
+				// 		Force:  true,
+				// 	})
+				// 	if err != nil {
+				// 		println("CheckOutError")
+				// 		log.Fatal(err)
+				// 		continue
+				// 	}
+				// } else {
+				// 	err = npmRepo.CreateBranch(&config.Branch{
+				// 		Merge:  plumbing.ReferenceName(branchNameStr),
+				// 		Name:   branchNameStr,
+				// 		Remote: "refs/heads/" + branchNameStr,
+				// 	})
+				// 	if err != nil {
+				// 		println("CreateBranchError")
+				// 		log.Fatal(err)
+				// 		continue
+				// 	}
+				// }
+				session.SetDir(npmDir)
+				session.Command("git", "checkout", "-fb", branchNameStr).Run()
 
 				ignoreAllRemove(npmDir, ".git")
 
@@ -248,9 +248,9 @@ func main() {
 				err = npmRepo.Push(&git.PushOptions{
 					RemoteName: "origin",
 					Progress:   os.Stdout,
-					RefSpecs: []config.RefSpec{
-						config.RefSpec(branch.Merge + ":" + plumbing.ReferenceName("refs/heads/"+branchNameStr)),
-					},
+					// RefSpecs: []config.RefSpec{
+					// 	config.RefSpec(branch.Merge + ":" + plumbing.ReferenceName("refs/heads/"+branchNameStr)),
+					// },
 					Auth: auth,
 				})
 				if err != nil {
