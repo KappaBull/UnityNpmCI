@@ -268,12 +268,13 @@ func main() {
 			}
 		}
 
+		//TODO: developにて実装
 		//全部終わったら一旦Masterブランチへ戻す
-		err = npmRepoWork.Checkout(masterCheckOpt)
-		if err != nil {
-			println("CheckOutError")
-			log.Fatal(err)
-		}
+		// err = npmRepoWork.Checkout(masterCheckOpt)
+		// if err != nil {
+		// 	println("CheckOutError")
+		// 	log.Fatal(err)
+		// }
 	}
 }
 
