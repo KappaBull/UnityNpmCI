@@ -16,7 +16,6 @@ import (
 	"golang.org/x/crypto/ssh"
 	git "gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing"
-	"gopkg.in/src-d/go-git.v4/plumbing/object"
 	gitssh "gopkg.in/src-d/go-git.v4/plumbing/transport/ssh"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -209,40 +208,41 @@ func main() {
 					println("File I/O Error")
 					continue
 				}
-				_, err = npmRepoWork.Add(ignoreFIlE)
+				//TODO: developにて実装
+				// _, err = npmRepoWork.Add(ignoreFIlE)
+				// if err != nil {
+				// 	log.Println(ignoreFIlE + " AddError")
+				// 	log.Println(err)
+				// }
+				// commitComment := tag + " " + time.Now().Format("2006/01/02")
+				// hash, comitErr := npmRepoWork.Commit(commitComment, &git.CommitOptions{
+				// 	All: true,
+				// 	Author: &object.Signature{
+				// 		Name:  "KappaBull",
+				// 		Email: "kappa8v11@gmail.com",
+				// 		When:  time.Now(),
+				// 	},
+				// })
+				// if comitErr != nil {
+				// 	log.Println("CommitError")
+				// 	log.Println(comitErr)
+				// 	continue
+				// }
+				// obj, err := npmRepo.CommitObject(hash)
+				// fmt.Println("Commit:" + commitComment + " Hash:" + hash.String())
+				// fmt.Println(obj)
+				err = session.Command("git", "add", "--all").Run()
 				if err != nil {
-					log.Println(ignoreFIlE + " AddError")
-					log.Println(err)
-				}
-				commitComment := tag + " " + time.Now().Format("2006/01/02")
-				hash, comitErr := npmRepoWork.Commit(commitComment, &git.CommitOptions{
-					All: true,
-					Author: &object.Signature{
-						Name:  "KappaBull",
-						Email: "kappa8v11@gmail.com",
-						When:  time.Now(),
-					},
-				})
-				if comitErr != nil {
-					log.Println("CommitError")
-					log.Println(comitErr)
+					log.Fatal(err)
 					continue
 				}
-				obj, err := npmRepo.CommitObject(hash)
-				fmt.Println("Commit:" + commitComment + " Hash:" + hash.String())
-				fmt.Println(obj)
-				// err = session.Command("git", "add", "--all").Run()
-				// if err != nil {
-				// 	log.Fatal(err)
-				// 	continue
-				// }
-				// err = session.Command("git", "commit", "-m", tag+" "+time.Now().Format("2006/01/02")).Run()
-				// if err != nil {
-				// 	if err.Error() == "nothing to commit, working tree clean" {
-				// 		println("No update")
-				// 	}
-				// 	continue
-				// }
+				err = session.Command("git", "commit", "-m", tag+" "+time.Now().Format("2006/01/02")).Run()
+				if err != nil {
+					if err.Error() == "nothing to commit, working tree clean" {
+						println("No update")
+					}
+					continue
+				}
 
 				// npmRepo.Storer.SetReference(plumbing.NewReferenceFromStrings(branchName, hash.String()))
 				err = npmRepo.Push(&git.PushOptions{
